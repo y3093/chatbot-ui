@@ -20,6 +20,8 @@ import {
 } from '@/utils/app/conversation';
 import { throttle } from '@/utils/data/throttle';
 
+import { parseStreamText } from '@/utils/app/importExport';
+
 import { ChatBody, Conversation, Message } from '@/types/chat';
 import { Plugin } from '@/types/plugin';
 
@@ -124,13 +126,15 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
         //   signal: controller.signal,
         //   body,
         // });
-        const url = "https://cbjtestapi.vercel.app/api/generateStream";
+        const url = "https://api.aios.chat/v1/chat/completions";
         const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
+            'authorization': 'Bearer ' + process.env.API_KEY,
           },
           method: 'POST',
           body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
             messages: [
               {
                 role: 'system',
@@ -146,7 +150,13 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
         if (!response.ok) {
           homeDispatch({ field: 'loading', value: false });
           homeDispatch({ field: 'messageIsStreaming', value: false });
-          toast.error(response.statusText);
+          try {
+            const { value } = await response.body?.getReader().read() || {};
+            const errorMsg = JSON.parse(new TextDecoder().decode(value));
+            toast.error(errorMsg?.error?.message);
+          } catch (error) {
+            toast.error('something is wrong')            
+          }
           return;
         }
         const data = response.body;
@@ -179,7 +189,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
             }
             const { value, done: doneReading } = await reader.read();
             done = doneReading;
-            const chunkValue = decoder.decode(value);
+            const chunkValue = parseStreamText(decoder.decode(value));
             text += chunkValue;
             if (isFirst) {
               isFirst = false;

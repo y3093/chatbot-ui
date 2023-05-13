@@ -30,6 +30,36 @@ export function isExportFormatV4(obj: any): obj is ExportFormatV4 {
 
 export const isLatestExportFormat = isExportFormatV4;
 
+export function parseStreamText(data: string) {
+  const dataList = data?.split('\n')?.filter((l) => l !== '');
+
+  const result = { role: 'assistant', content: '', stop: false };
+
+  dataList.forEach((l) => {
+    // 移除"data: "前缀
+    try {
+      const jsonStr = l.replace('data: ', '');
+  
+      if (jsonStr === '[DONE]') {
+        result.stop = true;
+      } else {
+        // 将JSON字符串转换为JavaScript对象
+        const jsonObj = JSON.parse(jsonStr);
+        const delta = jsonObj.choices[0].delta;
+        if (delta.role) result.role = delta.role;
+        else if (delta.content) {
+          result.content = `${result.content}${delta.content}`;
+        }
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error((error));
+    }
+  });
+
+  return result.content;
+}
+
 export function cleanData(data: SupportedExportFormats): LatestExportFormat {
   if (isExportFormatV1(data)) {
     return {
