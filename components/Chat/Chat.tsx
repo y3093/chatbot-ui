@@ -116,13 +116,32 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
           });
         }
         const controller = new AbortController();
-        const response = await fetch(endpoint, {
-          method: 'POST',
+        // const response = await fetch(endpoint, {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        //   signal: controller.signal,
+        //   body,
+        // });
+        const url = "https://cbjtestapi.vercel.app/api/generateStream";
+        const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
           },
-          signal: controller.signal,
-          body,
+          method: 'POST',
+          body: JSON.stringify({
+            messages: [
+              {
+                role: 'system',
+                content: updatedConversation.prompt,
+              },
+              ...updatedConversation.messages,
+            ],
+            max_tokens: 1000,
+            temperature: updatedConversation.temperature,
+            stream: true,
+          }),
         });
         if (!response.ok) {
           homeDispatch({ field: 'loading', value: false });
