@@ -130,7 +130,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
         const response = await fetch(url, {
           headers: {
             'Content-Type': 'application/json',
-            'authorization': 'Bearer ' + process.env.API_KEY,
+            'authorization': 'Bearer ' + process.env.OPENAI_API_KEY,
           },
           method: 'POST',
           body: JSON.stringify({
