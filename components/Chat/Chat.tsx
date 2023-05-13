@@ -20,8 +20,6 @@ import {
 } from '@/utils/app/conversation';
 import { throttle } from '@/utils/data/throttle';
 
-import { parseStreamText } from '@/utils/app/importExport';
-
 import { ChatBody, Conversation, Message } from '@/types/chat';
 import { Plugin } from '@/types/plugin';
 
@@ -118,34 +116,13 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
           });
         }
         const controller = new AbortController();
-        // const response = await fetch(endpoint, {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   signal: controller.signal,
-        //   body,
-        // });
-        const url = "https://api.aios.chat/v1/chat/completions";
-        const response = await fetch(url, {
+        const response = await fetch(endpoint, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'authorization': 'Bearer ' + process.env.OPENAI_API_KEY,
           },
-          method: 'POST',
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [
-              {
-                role: 'system',
-                content: updatedConversation.prompt,
-              },
-              ...updatedConversation.messages,
-            ],
-            max_tokens: 1000,
-            temperature: updatedConversation.temperature,
-            stream: true,
-          }),
+          signal: controller.signal,
+          body,
         });
         if (!response.ok) {
           homeDispatch({ field: 'loading', value: false });
@@ -189,7 +166,7 @@ export const Chat = memo(({ stopConversationRef }: Props) => {
             }
             const { value, done: doneReading } = await reader.read();
             done = doneReading;
-            const chunkValue = parseStreamText(decoder.decode(value));
+            const chunkValue = decoder.decode(value);
             text += chunkValue;
             if (isFirst) {
               isFirst = false;
